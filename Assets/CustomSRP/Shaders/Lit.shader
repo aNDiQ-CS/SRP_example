@@ -21,6 +21,7 @@ Shader "CustomSRP/Lit"
 			ZWrite [_ZWrite]
 
 			HLSLPROGRAM
+			#pragma target 3.5
 			#pragma vertex Vertex
 			#pragma fragment Fragment
 			#include "LitPass.hlsl"
