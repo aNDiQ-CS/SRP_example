@@ -1,6 +1,9 @@
 Shader "CustomSRP/Unlit"
 {
-	Properties {}
+	Properties
+	{
+		_BaseColor("Color", Color) = (1.0, 1.0, 1.0, 1.0)
+	}
 
 	SubShader
 	{
