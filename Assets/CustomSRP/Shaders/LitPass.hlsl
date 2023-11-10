@@ -4,6 +4,7 @@
 #include "../ShaderLibrary/Common.hlsl"
 #include "../ShaderLibrary/Surface.hlsl"
 #include "../ShaderLibrary/Light.hlsl"
+#include "../ShaderLibrary/BRDF.hlsl"
 #include "../ShaderLibrary/Lighting.hlsl"
 
 TEXTURE2D(_BaseMap);
@@ -12,6 +13,8 @@ SAMPLER(sampler_BaseMap);
 CBUFFER_START(UnityPerMaterial)
 	float4 _BaseColor;
 	float4 _BaseMap_ST; //texture scale and transform params
+	float _Metalness;
+	float _Roughness;
 CBUFFER_END
 
 struct VertexAttributes {
@@ -22,6 +25,7 @@ struct VertexAttributes {
 
 struct Varyings {
 	float4 positionCS : SV_POSITION;
+	float3 positionWS : VAR_POSITION;
 	float3 normalWS   : VAR_NORMAL;
 	float2 uv         : TEXCOORD0;
 };
@@ -29,8 +33,8 @@ struct Varyings {
 Varyings Vertex(VertexAttributes vertexInput)
 {
 	Varyings vertexOut;
-	float3 positionWS = TransformObjectToWorld(vertexInput.positionOS.xyz);
-	vertexOut.positionCS = TransformWorldToHClip(positionWS);
+	vertexOut.positionWS = TransformObjectToWorld(vertexInput.positionOS.xyz);
+	vertexOut.positionCS = TransformWorldToHClip(vertexOut.positionWS);
 	vertexOut.normalWS = TransformObjectToWorldNormal(vertexInput.normalOS);
 	vertexOut.uv = vertexInput.uv * _BaseMap_ST.xy + _BaseMap_ST.zw;
 
@@ -44,10 +48,14 @@ float4 Fragment(Varyings fragmentInput) : SV_TARGET
 
 	Surface surface;
 	surface.normal = normalize(fragmentInput.normalWS);
+	surface.viewDirection = normalize(_WorldSpaceCameraPos - fragmentInput.positionWS);
 	surface.color = baseColor.rgb;
 	surface.alpha = baseColor.a;
+	surface.metalness = _Metalness;
+	surface.roughness = _Roughness;
 
-	float3 color = GetLighting(surface);
+	BRDF brdf = GetBRDF(surface);
+	float3 color = GetLighting(surface, brdf);
 
 	return float4(color, surface.alpha);
 }
