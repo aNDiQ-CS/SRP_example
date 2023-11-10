@@ -14,6 +14,7 @@ public partial class CameraRenderer {
 	};
 
 	static ShaderTagId unlitShaderTagId = new ShaderTagId("SRPDefaultUnlit");
+	static ShaderTagId litShaderTagId = new ShaderTagId("CustomLit");
 
 
 	public void Render(ScriptableRenderContext context, Camera camera)
@@ -63,6 +64,7 @@ public partial class CameraRenderer {
 		var drawingSettings = new DrawingSettings(
 			unlitShaderTagId, sortingSettings
 		);
+		drawingSettings.SetShaderPassName(1, litShaderTagId);
 		var filteringSettings = new FilteringSettings(RenderQueueRange.opaque);
 
 		context.DrawRenderers(
