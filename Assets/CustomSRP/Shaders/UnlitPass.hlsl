@@ -3,19 +3,38 @@
 
 #include "../ShaderLibrary/Common.hlsl"
 
+TEXTURE2D(_BaseMap);
+SAMPLER(sampler_BaseMap);
+
 CBUFFER_START(UnityPerMaterial)
 	float4 _BaseColor;
+	float4 _BaseMap_ST; //texture scale and transform params
 CBUFFER_END
 
-float4 Vertex(float3 positionOS : POSITION) : SV_POSITION
+struct VertexAttributes {
+	float3 positionOS : POSITION;
+	float2 uv         : TEXCOORD0;
+};
+
+struct Varyings {
+	float4 positionCS : SV_POSITION;
+	float2 uv         : TEXCOORD0;
+};
+
+Varyings Vertex(VertexAttributes vertexInput)
 {
-	float3 positionWS = TransformObjectToWorld(positionOS.xyz);
-	return TransformWorldToHClip(positionWS);
+	Varyings vertexOut;
+	float3 positionWS = TransformObjectToWorld(vertexInput.positionOS.xyz);
+	vertexOut.positionCS = TransformWorldToHClip(positionWS);
+	vertexOut.uv = vertexInput.uv * _BaseMap_ST.xy + _BaseMap_ST.zw;
+
+	return vertexOut;
 }
 
-float4 Fragment() : SV_TARGET
+float4 Fragment(Varyings fragmentInput) : SV_TARGET
 {
-	return _BaseColor;
+	float4 baseMapColor = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, fragmentInput.uv);
+	return baseMapColor * _BaseColor;
 }
 
 #endif
