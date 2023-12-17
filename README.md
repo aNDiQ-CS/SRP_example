@@ -1,11 +1,15 @@
-# Simple SRP example
+# First steps by David Nikitin
 
-This repo contains Unity sample (for 2021.3.19f1 version) which uses simple SRP implementation based on 3 first chapters of [Catlike Coding](https://catlikecoding.com/unity/tutorials/custom-srp/) tutors.
+First thing I tried to add was car physics
 
-Examples of basic lit and unlit materials can be found in **Main** scene.
+Due to time issueses (and skill, I guess) I've completed only small part of all the project
 
-![MaterialExamples](ExampleImages/main_scene.png "Material Examples")
+For now, this repository contains script, which (badly) bend our machine on collision enter and resets those parts, which are damaged mostly
 
-Imported car model is placed in **Car** scene.
+# TODO
 
-![CarScene](ExampleImages/car_scene.png "Car Scene")
++ Add normal physics, which considers different types of material (rubber, plastic, glass and etc.)
++ Add HP to car parts
++ Paint car and form scratches when damaged
++ Start making shadows and lights
++ Make interactive testing scene

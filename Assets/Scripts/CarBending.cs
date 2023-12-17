@@ -21,7 +21,6 @@ public class CarBending : MonoBehaviour
     [SerializeField]
     private List<MeshFilter> MeshList; 
 
-
     private void Start()
     {
         foreach (Transform child in transform)
