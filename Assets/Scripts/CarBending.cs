@@ -19,7 +19,9 @@ public class CarBending : MonoBehaviour
     private float impactDirManipulator = 0.0f;
 
     [SerializeField]
-    private List<MeshFilter> MeshList; 
+    private List<MeshFilter> MeshList;
+
+    private Dictionary<MeshFilter, float> MeshHP = new Dictionary<MeshFilter, float>();
 
     private void Start()
     {
@@ -31,16 +33,28 @@ public class CarBending : MonoBehaviour
 
         if (MeshList.Count == 0)
             MeshList = new List<MeshFilter>(GetComponentsInChildren<MeshFilter>());
+
+        foreach (MeshFilter mf in MeshList)
+        {
+            MeshHP.Add(mf, 100f);
+            float value;
+            MeshHP.TryGetValue(mf, out value);
+        }
+
+        Physics.IgnoreLayerCollision(7, 8, true);
     }
 
     private void OnCollisionEnter(Collision collision)
     {
-        Mesh mesh = collision.GetContact(0).thisCollider.transform.GetComponent<MeshFilter>().mesh;
-        GetPhysicsInputs(mesh, collision);
-    }
+        MeshFilter meshFilter = collision.GetContact(0).thisCollider.transform.GetComponent<MeshFilter>();
+        GetPhysicsInputs(meshFilter, collision);
+        CheckHP(meshFilter, collision);
+    }    
 
-    private void GetPhysicsInputs(Mesh mesh, Collision collision)
+    private void GetPhysicsInputs(MeshFilter meshFilter, Collision collision)
     {
+        Mesh mesh = meshFilter.mesh;
+
         print(collision.transform.name);
         Vector3 point = collision.GetContact(0).point - transform.position;
         Vector3 velocity = collision.rigidbody.velocity;
@@ -50,9 +64,14 @@ public class CarBending : MonoBehaviour
         print("Point - " + point);
         print("Velocity - " + velocity);
         print("Impulse - " + impulse);
-        print("Mass - " + mass);
-        
-        Bend(mesh, mesh.vertices, -impulse, collision);
+        float velocityScalar = CalculateDistance(velocity, Vector3.zero);
+        float impulseScalar = CalculateDistance(impulse, Vector3.zero);
+        float collisionForce = impulseScalar * 10f / velocityScalar;
+        MeshHP[meshFilter] -= collisionForce;
+
+        print("Collision Force - " + collisionForce);
+
+        //Bend(mesh, mesh.vertices, -impulse, collision);
     }
     
     private void Bend(Mesh mesh, Vector3[] points, Vector3 impulse, Collision collision)
@@ -65,13 +84,7 @@ public class CarBending : MonoBehaviour
             Vector3 carPartPoint = mesh.vertices[i];
 
             Vector3 newPoint = CalculateBending(point, carPartPoint, impulse);
-            float rs = CalculateDistance(point, newPoint);
-            if (rs > max_dif)
-            {
-                Transform tr = collision.GetContact(0).thisCollider.transform;
-                tr.parent = null;
-                return;
-            }
+            float rs = CalculateDistance(point, newPoint);            
             new_mesh.Add(newPoint);
         }
 
@@ -87,16 +100,27 @@ public class CarBending : MonoBehaviour
         float r = CalculateDistance(point, carPartPoint);
         if (r < delta)
         {
-            point += impulse;
-            
-        }
-            
+            point += impulse;            
+        }            
         return point;
     }
 
-    private float CalculateDistance (Vector3 p1, Vector3 p2)
+    private float CalculateDistance(Vector3 p1, Vector3 p2)
     {
         Vector3 dif = p1 - p2;
         return Mathf.Sqrt(Mathf.Pow(dif[0], 2) + Mathf.Pow(dif[1], 2) + Mathf.Pow(dif[2], 2));
+    }
+
+    private void CheckHP(MeshFilter meshFilter, Collision collision)
+    {
+        float hp;
+        MeshHP.TryGetValue(meshFilter, out hp);
+        if (hp <= 0f)
+        {
+            Transform tr = collision.GetContact(0).thisCollider.transform;
+            tr.parent = null;
+            tr.AddComponent<Rigidbody>();
+            tr.gameObject.layer = 8;            
+        }
     }
 }
