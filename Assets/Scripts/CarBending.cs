@@ -8,7 +8,7 @@ using UnityEngine;
 public class CarBending : MonoBehaviour
 {
     [SerializeField]
-    private float maxMoveDelta = 0.5f; // maximum distance one vertice moves per explosion (in meters)\
+    private float maxMoveDelta = 0.1f; // maximum distance one vertice moves per explosion (in meters)\
     [SerializeField]
     private float maxCollisionStrength = 50.0f;
     [SerializeField, Range(0f, 1f)] 
@@ -55,54 +55,56 @@ public class CarBending : MonoBehaviour
     {
         Mesh mesh = meshFilter.mesh;
 
-        print(collision.transform.name);
-        Vector3 point = collision.GetContact(0).point - transform.position;
+        Vector3 collisionPoint = collision.GetContact(0).point - transform.position;
         Vector3 velocity = collision.rigidbody.velocity;
         Vector3 impulse = collision.impulse;
-        float mass = collision.rigidbody.mass;
 
-        print("Point - " + point);
-        print("Velocity - " + velocity);
-        print("Impulse - " + impulse);
         float velocityScalar = CalculateDistance(velocity, Vector3.zero);
         float impulseScalar = CalculateDistance(impulse, Vector3.zero);
         float collisionForce = impulseScalar * 10f / velocityScalar;
         MeshHP[meshFilter] -= collisionForce;
 
-        print("Collision Force - " + collisionForce);
 
-        //Bend(mesh, mesh.vertices, -impulse, collision);
+        Bend(mesh, collisionPoint, collisionForce);
     }
     
-    private void Bend(Mesh mesh, Vector3[] points, Vector3 impulse, Collision collision)
+    private void Bend(Mesh mesh, Vector3 collisionPoint, float collisionForce)
     {
-        List<Vector3> new_mesh = new List<Vector3>();
+        List<Vector3> meshVertices = new List<Vector3>(mesh.vertices);
+        List<Vector3> newMesh = new List<Vector3>();
+        List<Vector3> normals = new List<Vector3>(mesh.normals);
 
-        for (int i = 0; i < mesh.vertices.Length; i++)
+        for (int i = 0; i < meshVertices.Count; i++)
         {
-            Vector3 point = points[i];
-            Vector3 carPartPoint = mesh.vertices[i];
+            Vector3 carPartVertex = meshVertices[i];
+            Vector3 carPartNormal = normals[i];
 
-            Vector3 newPoint = CalculateBending(point, carPartPoint, impulse);
-            float rs = CalculateDistance(point, newPoint);            
-            new_mesh.Add(newPoint);
+            Vector3 newVertex = CalculateBending(collisionPoint, carPartVertex, collisionForce, carPartNormal);
+            newMesh.Add(newVertex);
         }
 
-        mesh.vertices = new_mesh.ToArray();
+        
+
+        mesh.vertices = newMesh.ToArray();
     }
 
-    const float delta = 0.2f, max_dif = 0.5f;
+    const float max_dif = 0.1f;
 
     // Calculates new Bending of a point based on physics
-    private Vector3 CalculateBending(Vector3 point, Vector3 carPartPoint, Vector3 impulse)
-    {                
-        Vector3 startPoint = point;
-        float r = CalculateDistance(point, carPartPoint);
+    private Vector3 CalculateBending(Vector3 collisionPoint, Vector3 carPartVertex, float collisionForce, Vector3 carPartNormal)
+    {
+        if (collisionForce < 10f)
+            return carPartVertex;        
+
+        Vector3 startVertex = collisionPoint;
+        float delta = collisionForce / 500f;
+        float r = CalculateDistance(collisionPoint, carPartVertex);
+
         if (r < delta)
         {
-            point += impulse;            
+            carPartVertex -= carPartNormal * Mathf.Clamp(delta - r, 0f, max_dif);            
         }            
-        return point;
+        return carPartVertex;
     }
 
     private float CalculateDistance(Vector3 p1, Vector3 p2)
